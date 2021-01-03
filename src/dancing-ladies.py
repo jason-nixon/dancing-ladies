@@ -3,8 +3,6 @@ import cv2 as cv
 import argparse
 from pathlib import Path
 
-# a change to add.  
-
 # Specify the filepath of the video to read.  
 video_file = 'C:\\repos\\ladies\\asset\\video\\ladies.avi'
 
