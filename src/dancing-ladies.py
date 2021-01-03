@@ -1,10 +1,10 @@
 import numpy as np
 import cv2 as cv
 import argparse
-from pathlib import Path
 
 # Specify the filepath of the video to read.  
-video_file = 'C:\\repos\\ladies\\asset\\video\\ladies.avi'
+
+video_file = 'C:\\repos\\dancing-ladies\\asset\\video\\ladies.avi'
 
 # Generate the background subtraction object (KNN or MOG2).  
 backSub = cv.createBackgroundSubtractorKNN(history = 2, dist2Threshold = 75, detectShadows = False)
@@ -13,40 +13,44 @@ backSub = cv.createBackgroundSubtractorKNN(history = 2, dist2Threshold = 75, det
 capture = cv.VideoCapture(cv.samples.findFileOrKeep(video_file))
 
 if not capture.isOpened:
-    print('Unable to open: ' + args.input)
+    print('Error: Unable to open: ' + args.input)
     exit(0)
 
-# erosion/dilation (opening) kernal.  
-openKernal = np.ones((3,3),np.uint8)
+index = 0
 
 while True:
+
+    # Incremenet frame index.  
+    index += 1
+
+    # Print current frame index.  
+    print(index)
 
     # Read frame from video.  
     _, frame = capture.read()
 
     # If no more frames, done.  
     if frame is None:
+        print('Warning: Frame is empty.')
         break
 
     # Convert color space RGB -> Gray
-    frame = cv.cvtColor(frame, cv.COLOR_RGB2GRAY)
+    # frame = cv.cvtColor(frame, cv.COLOR_RGB2GRAY)
 
-    # Apply opening morphological operation.  
-    frame = cv.morphologyEx(frame, cv.MORPH_OPEN, np.ones((5,5),np.uint8))
+    # # Apply opening morphological operation.  
+    # frame = cv.morphologyEx(frame, cv.MORPH_OPEN, np.ones((5,5),np.uint8))
 
     # Convert color space Gray -> RGB
-    frame = cv.cvtColor(frame, cv.COLOR_GRAY2RGB)
+    # frame = cv.cvtColor(frame, cv.COLOR_GRAY2RGB)
 
     # Convert colorspace: RGB -> HSV
-    frame = cv.cvtColor(frame, cv.COLOR_RGB2HSV)
+    # frame = cv.cvtColor(frame, cv.COLOR_RGB2HSV)
     
     # Calculate the forground mask.  
-    fgMask = backSub.apply(frame) 
+    fgMask = backSub.apply(frame)
 
 
-    cv.rectangle(frame, (10, 2), (100,20), (255,255,255), -1)
-
-    cv.putText(frame, str(capture.get(cv.CAP_PROP_POS_FRAMES)), (15, 15), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0))
+    # cv.rectangle(frame, (10, 2), (100,20), (255,255,255), -1)
 
     # Show the foreground mask.  
-    cv.imshow('FG Mask', fgMask)
+    cv.imshow(winname = 'ForegroundMask', mat = frame)
