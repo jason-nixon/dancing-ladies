@@ -1,36 +1,49 @@
 import numpy as np
 import cv2 as cv
+from pathlib import Path
+
+DisplayFrames = False
+
+GenerateOutputVideo = True
 
 # Specify the filepath of the video to read.  
-video_file = 'C:\\repos\\dancing-ladies\\asset\\video\\ladies.avi'
+video_file = 'C:\\repos\\dancing-ladies\\data\\raw\\ladies.avi'
 
 # Generate the background subtraction object (KNN or MOG2).  
 backSub = cv.createBackgroundSubtractorKNN(history = 2, dist2Threshold = 75, detectShadows = False)
 
 # Start reading the target video.  
-capture = cv.VideoCapture(cv.samples.findFileOrKeep(video_file))
+VideoInput = cv.VideoCapture(cv.samples.findFileOrKeep(video_file))
+
+# Video input frame rate, width, and height (W and H must be cast as integers).  
+VideoInFrameRate = VideoInput.get(cv.CAP_PROP_FPS)
+VideoinFrameWidth = int(VideoInput.get(cv.CAP_PROP_FRAME_WIDTH))
+VideoinFrameHeight = int(VideoInput.get(cv.CAP_PROP_FRAME_HEIGHT))
 
 # Quit is video could not be opened.  
-if not capture.isOpened:
+if not VideoInput.isOpened:
     print('Error: Unable to open: ' + args.input)
     exit(0)
 
-index = 0
+# Create video object to write to.
+if GenerateOutputVideo:
+    VideoOutput = cv.VideoWriter('C:\\repos\\dancing-ladies\\data\\processed\\output.avi', cv.VideoWriter_fourcc('M','J','P','G') , VideoInFrameRate, (VideoinFrameWidth,VideoinFrameHeight))
+
+# Video frame index.  
+FrameIndex = 0
 
 while True:
 
-    # Incremenet frame index.  
-    index += 1
-
-    # Print current frame index.  
-    print(index)
+    # Incramenet and print frame index.  
+    FrameIndex += 1
+    print(FrameIndex)
 
     # Read frame from video.  
-    _, Frame = capture.read()
+    _, Frame = VideoInput.read()
 
     # If no more frames, done.  
     if Frame is None:
-        print('Warning: Frame is empty.')
+        print('Warning: Frame is empty, exiting while loop.')
         break
 
     # Convert color space RGB -> Gray
@@ -48,8 +61,20 @@ while True:
     # Calculate the forground mask.  
     ForegroundMask = backSub.apply(Frame)
 
-    # Show the foreground mask.  
-    cv.imshow(winname = 'ForegroundMask', mat = ForegroundMask)
+    if DisplayFrames:
+        # Show the foreground mask.  
+        cv.imshow(winname = 'ForegroundMask', mat = ForegroundMask)
 
-    # Paused imshow for X miliseconds, imshow doesn't work otherwise (same as matlab).  
-    keyboard = cv.waitKey(30)
+        # Paused imshow for X miliseconds, imshow doesn't work otherwise (same as MATLAB).  
+        _ = cv.waitKey(30)
+
+    # Write to output video object.
+    if GenerateOutputVideo:
+        VideoOutput.write(cv.cvtColor(ForegroundMask, cv.COLOR_GRAY2RGB))
+
+# Close all open opencv windows.
+cv.destroyAllWindows()
+
+# Release output video. 
+if GenerateOutputVideo:
+    VideoOutput.release()
