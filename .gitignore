@@ -129,4 +129,4 @@ dmypy.json
 .pyre/
 
 # Ignore videos
-asset/video/ladies.avi
+
