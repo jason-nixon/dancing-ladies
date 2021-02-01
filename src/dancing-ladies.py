@@ -12,7 +12,7 @@ GenerateOutputVideo = True
 video_file = 'C:\\repos\\dancing-ladies\\data\\raw\\ladies.avi'
 
 # Generate the background subtraction object (KNN or MOG2).
-backSub = cv.createBackgroundSubtractorKNN(history = 2, dist2Threshold = 75, detectShadows = False)
+backSub = cv.createBackgroundSubtractorKNN(history = 3, dist2Threshold = 75, detectShadows = False)
 
 # Start reading the target video.
 VideoInput = cv.VideoCapture(cv.samples.findFileOrKeep(video_file))
@@ -91,19 +91,9 @@ while True:
 
     Frame = cv.morphologyEx(src = Frame, op = cv.MORPH_CLOSE, kernel = np.ones((50, 5),np.uint8))
 
-    Frame = cv.morphologyEx(src = Frame, op = cv.MORPH_CLOSE, kernel = np.ones((100, 3),np.uint8))
+    # Frame = cv.morphologyEx(src = Frame, op = cv.MORPH_CLOSE, kernel = np.ones((100, 3),np.uint8))
 
-    Frame = cv.morphologyEx(src = Frame, op = cv.MORPH_CLOSE, kernel = np.ones((1, 200),np.uint8))
-
-    contours = cv.findContours(Frame, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-
-    contours = contours[0] if len(contours) == 2 else contours[1]
-
-    for index in contours:
-        cv.drawContours(Frame, [index], 0, (255,255,255), -1)
-
-
-    Frame = cv.morphologyEx(src = Frame, op = cv.MORPH_CLOSE, kernel = np.ones((300,1),np.uint8))
+    # Frame = cv.morphologyEx(src = Frame, op = cv.MORPH_CLOSE, kernel = np.ones((1, 200),np.uint8))
 
     contours = cv.findContours(Frame, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
@@ -111,6 +101,22 @@ while True:
 
     for index in contours:
         cv.drawContours(Frame, [index], 0, (255,255,255), -1)
+
+    # morph: open (erode, then dilate)
+    # morph: close (dilate, then erode)
+    # Morphological operations; manipulate kernal size
+    # Close bodies.  
+    
+
+
+    # Frame = cv.morphologyEx(src = Frame, op = cv.MORPH_CLOSE, kernel = np.ones((300,1),np.uint8))
+
+    # contours = cv.findContours(Frame, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+    # contours = contours[0] if len(contours) == 2 else contours[1]
+
+    # for index in contours:
+    #     cv.drawContours(Frame, [index], 0, (255,255,255), -1)
 
 
     # Frame = cv.morphologyEx(Frame, cv.MORPH_CLOSE, np.ones((100,5),np.uint8))
