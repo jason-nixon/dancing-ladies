@@ -11,8 +11,8 @@ GenerateOutputVideo = True
 # Specify the filepath of the video to read.
 video_file = 'C:\\repos\\dancing-ladies\\data\\raw\\ladies.avi'
 
-# Generate the background subtraction object (KNN or MOG2).
-backSub = cv.createBackgroundSubtractorKNN(history = 3, dist2Threshold = 75, detectShadows = False)
+# Generate the background subtraction object (KNN or MOG2). (2, 75)
+backSub = cv.createBackgroundSubtractorKNN(history = 2, dist2Threshold = 50, detectShadows = False)
 
 # Start reading the target video.
 VideoInput = cv.VideoCapture(cv.samples.findFileOrKeep(video_file))
@@ -45,6 +45,8 @@ while True:
 
     # Read frame from video.
     _ret, Frame = VideoInput.read()
+
+    aFullColorFrame = Frame
 
     # If no more frames, done.
     if Frame is None:
@@ -91,9 +93,11 @@ while True:
 
     Frame = cv.morphologyEx(src = Frame, op = cv.MORPH_CLOSE, kernel = np.ones((50, 5),np.uint8))
 
-    # Frame = cv.morphologyEx(src = Frame, op = cv.MORPH_CLOSE, kernel = np.ones((100, 3),np.uint8))
+    Frame = cv.morphologyEx(src = Frame, op = cv.MORPH_CLOSE, kernel = np.ones((3, 50),np.uint8))
+    
+    Frame = cv.morphologyEx(src = Frame, op = cv.MORPH_CLOSE, kernel = np.ones((100, 3),np.uint8))
 
-    # Frame = cv.morphologyEx(src = Frame, op = cv.MORPH_CLOSE, kernel = np.ones((1, 200),np.uint8))
+    
 
     contours = cv.findContours(Frame, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
@@ -101,6 +105,15 @@ while True:
 
     for index in contours:
         cv.drawContours(Frame, [index], 0, (255,255,255), -1)
+
+    
+    Frame = cv.morphologyEx(src = Frame, op = cv.MORPH_CLOSE, kernel = np.ones((1, 200),np.uint8))
+
+    Frame = cv.morphologyEx(src = Frame, op = cv.MORPH_CLOSE, kernel = np.ones((300, 1),np.uint8))
+
+    # Frame = cv.morphologyEx(src = Frame, op = cv.MORPH_CLOSE, kernel = np.ones((100, 5),np.uint8))
+
+    # Frame = cv.morphologyEx(src = Frame, op = cv.MORPH_CLOSE, kernel = np.ones((1, 200),np.uint8))
 
     # morph: open (erode, then dilate)
     # morph: close (dilate, then erode)
