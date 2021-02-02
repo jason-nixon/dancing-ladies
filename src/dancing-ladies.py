@@ -59,10 +59,12 @@ while True:
     print(nFrameIndex)
 
     # Read aFrame from video.
-    bGrabbed, aFrame = oInputVideo.read()
+    bGrabbed, aFrameOriginal = oInputVideo.read()
+
+    aFrame = aFrameOriginal
 
     # If no more frames, done.
-    if aFrame is None:
+    if aFrame is None or aFrameOriginal is None:
         print('--> aFrame is empty, exiting while loop.')
         break
 
@@ -161,6 +163,9 @@ while True:
 
     # segment bottom to waistline and do close operation (prevents arms from getting caught in the closing operation).
 
+    aFrameOriginal[(aFrame>=1).all(-1)] = [0,255,0]
+
+
     if bDisplayFrames:
         # Show the foreground mask.
         cv.imshow(winname = 'ForegroundMask', mat = aFrame)
@@ -170,7 +175,7 @@ while True:
 
     # Write to output video object.
     if bGenerateOutputVideo:
-        oOutputVideo.write(cv.cvtColor(aFrame, cv.COLOR_GRAY2RGB))
+        oOutputVideo.write(aFrameOriginal)
 
 # Close all open opencv windows.
 cv.destroyAllWindows()
