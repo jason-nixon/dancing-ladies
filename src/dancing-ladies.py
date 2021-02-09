@@ -25,13 +25,13 @@ bGenerateOutputVideo = False
 sVideoFullFilePath = 'C:\\repos\\dancing-ladies\\data\\raw\\ladies.avi'
 
 # Generate the background subtraction object (KNN or MOG2). (2, 75)
-oBackgroundSubtractor = cv.createBackgroundSubtractorKNN(history = 2, dist2Threshold = 75, detectShadows = False)
+oBackgroundSubtractor = cv.createBackgroundSubtractorKNN(history = 5, dist2Threshold = 75, detectShadows = False)
 
 # Start reading the target video.
 oInputVideo = cv.VideoCapture(cv.samples.findFileOrKeep(sVideoFullFilePath))
 
 
-# Video input aFrame rate, width, and height (W and H must be cast as integers).
+# Video input aWorkingFrame rate, width, and height (W and H must be cast as integers).
 fFrameRate = oInputVideo.get(cv.CAP_PROP_FPS)
 nFrameWidth = int(oInputVideo.get(cv.CAP_PROP_FRAME_WIDTH))
 fFrameHeight = int(oInputVideo.get(cv.CAP_PROP_FRAME_HEIGHT))
@@ -48,111 +48,71 @@ if not os.path.isdir('C:\\repos\\dancing-ladies\\data\\processed\\'):
 if bGenerateOutputVideo:
     oOutputVideo = cv.VideoWriter('C:\\repos\\dancing-ladies\\data\\processed\\output.avi', cv.VideoWriter_fourcc('M','J','P','G') , fFrameRate, (nFrameWidth,fFrameHeight))
 
-# Initialize aFrame index var.
+# Initialize aWorkingFrame index var.
 nFrameIndex = 0
 
 while True:
 
-    # Incramenet and print aFrame index.
+    # Incramenet and print aWorkingFrame index.
     nFrameIndex += 1
     print(nFrameIndex)
 
-    # Read aFrame from video.
+    # Read aWorkingFrame from video.
     bGrabbed, aFrameOriginal = oInputVideo.read()
 
     aFrameOriginal = aFrameOriginal[1:fFrameHeight, 1:640, :]
 
-    aFrame = np.copy(aFrameOriginal)
+    aWorkingFrame = np.copy(aFrameOriginal)
+
+    aFrameOverlay = np.copy(aFrameOriginal)
 
     # If no more frames, done.
-    if aFrame is None or aFrameOriginal is None:
-        print('--> aFrame is empty, exiting while loop.')
+    if aWorkingFrame is None or aFrameOriginal is None:
+        print('--> aWorkingFrame is empty, exiting while loop.')
         break
 
     # Convert color space RGB -> Gray
-    aFrame =  (cv.cvtColor(aFrame, cv.COLOR_RGB2GRAY))
+    # aWorkingFrame =  (cv.cvtColor(aWorkingFrame, cv.COLOR_RGB2GRAY))
 
-    # Apply 'open' morphological operation to remove 'snow' (small unconnected bodies due to avi compression).
-    for index in range(0,3,1):
-        aFrame = cv.morphologyEx(aFrame, cv.MORPH_OPEN, np.ones((index * 2 + 7, index * 2 + 7), np.uint8))
+    for index in range(0,1,1):
+        aWorkingFrame = cv.morphologyEx(aWorkingFrame, cv.MORPH_OPEN, np.ones((index * 2 + 7, index * 2 + 7), np.uint8))
 
+    aWorkingFrame = cv.medianBlur(aWorkingFrame, 5)
 
-    # Convert color space Gray -> RGB
-    aFrame = cv.cvtColor(aFrame, cv.COLOR_GRAY2RGB)
+    aWorkingFrame = cv.bilateralFilter(aWorkingFrame, 15, 150, 150)
 
-    # Convert colorspace: RGB -> HSV
-    aFrame = cv.cvtColor(aFrame, cv.COLOR_RGB2HSV)
+    aWorkingFrame = cv.cvtColor(aWorkingFrame, cv.COLOR_RGB2HSV)
 
-    # Calculate the forground mask.
-    aMask = oBackgroundSubtractor.apply(aFrame)
+    aMask = oBackgroundSubtractor.apply(aWorkingFrame)
 
-    # # Find all connected entities.
-    # aEntityList, aLabeledImage, aEntityStats, aEntityCentroids = cv.connectedComponentsWithStats(image = aMask, connectivity = 8)
+    aEntityList, aLabeledImage, aEntityStats, aEntityCentroids = cv.connectedComponentsWithStats(image = aMask, connectivity = 8)
 
-    # # The background is included as the 0th entry of the entity statistics, and should be removed.
-    # aEntityStats = aEntityStats[1:, -1]
+    aEntityStats = aEntityStats[1:, -1]
 
-    # # Generate a blank image to transplant to.
-    # aTempFrame = np.zeros((aLabeledImage.shape), dtype = np.uint8)
+    aTempFrame = np.zeros((aLabeledImage.shape), dtype = np.uint8)    
 
-    # # For every component in the image, keep if it's above minimum size.
-    # for i in range(0,  aEntityList - 1):
-    #     if aEntityStats[i] > config.nMinEntitySize:
-    #         aTempFrame[aLabeledImage == i + 1] = 255
+    for nIndex in range(0,  aEntityList - 1):
+        if aEntityStats[nIndex] > config.nMinEntitySize:
+            aTempFrame[aLabeledImage == nIndex + 1] = 255
 
-    # aMask = aTempFrame
+    aMask = aTempFrame
 
-    aMask = cv.morphologyEx(src = aMask, op = cv.MORPH_CLOSE, kernel = np.ones((25, 3),np.uint8))
+    aMask = cv.bilateralFilter(aMask, 7, 150, 150)
 
-    aMask = cv.morphologyEx(src = aMask, op = cv.MORPH_CLOSE,kernel = np.ones((50, 5),np.uint8))
+    aMask[np.where(aMask < 225)] = 0
 
-    aMask = cv.morphologyEx(src = aMask, op = cv.MORPH_CLOSE,kernel = np.ones((3, 50),np.uint8))
+    for nIndex in range(0, 20, 1):
+        kernal = cv.getStructuringElement(cv.MORPH_ELLIPSE,(5,5))
+        aMask = cv.morphologyEx(src = aMask, op = cv.MORPH_CLOSE, kernel = kernal)
 
-    aMask = cv.morphologyEx(src = aMask, op = cv.MORPH_CLOSE, kernel = np.ones((100, 3),np.uint8))
+    for nIndex in range(0, 20, 1):
+        aMask = cv.morphologyEx(src = aMask, op = cv.MORPH_OPEN, kernel = kernal)
 
-    # contours = cv.findContours(aMask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    for nIndex in range(0, 20, 1):
+        aMask = cv.morphologyEx(src = aMask, op = cv.MORPH_CLOSE, kernel = kernal)
 
-    # contours = contours[0] if len(contours) == 2 else contours[1]
-
-    # for nIndex in contours:
-    #     cv.drawContours(aMask, [nIndex], 0, (255,255,255), -1)
-
-    aMask = cv.morphologyEx(src = aMask, op = cv.MORPH_CLOSE, kernel = np.ones((1, 200),np.uint8))
-
-    aMask = cv.morphologyEx(src = aMask, op = cv.MORPH_CLOSE, kernel = np.ones((300, 1),np.uint8))
-
-    aMask = cv.morphologyEx(src = aMask, op = cv.MORPH_CLOSE, kernel = np.ones((100, 5),np.uint8))
-
-    aMask = cv.morphologyEx(src = aMask, op = cv.MORPH_CLOSE, kernel = np.ones((1, 200),np.uint8))
-
-    aMask = cv.morphologyEx(src = aMask, op = cv.MORPH_CLOSE, kernel = np.ones((300,1),np.uint8))
-
-    # contours = cv.findContours(aMask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-
-    # contours = contours[0] if len(contours) == 2 else contours[1]
-
-    # for index in contours:
-    #     cv.drawContours(aMask, [index], 0, (255,255,255), -1)
-
-
-    # aMask = cv.morphologyEx(aMask, cv.MORPH_CLOSE, np.ones((100,5),np.uint8))
-
-    # aMask = cv.morphologyEx(aMask, cv.MORPH_CLOSE, np.ones((1,50),np.uint8))
-
-
-
-    # for index2 in range(0,2,1):
-
-    #     for index in range(0,1,1):
-    #         aMask = cv.morphologyEx(aMask, cv.MORPH_CLOSE, np.ones((7,7),np.uint8))
-
-    #     for index in range(0,1,1):
-    #         aMask = cv.morphologyEx(aMask, cv.MORPH_CLOSE, np.ones((1,100),np.uint8))
-
-    # for index in range(0,1,1):
-    #     aMask = cv.morphologyEx(aMask, cv.MORPH_CLOSE, np.ones((1,250),np.uint8))
-
-    aFrameOverlay = np.copy(aFrameOriginal)
+    for nIndex in range(0, 20, 1):
+        aMask = cv.morphologyEx(src = aMask, op = cv.MORPH_OPEN, kernel = kernal) 
 
     aFrameOverlay[np.where(aMask == 255)] = [0,255,255]
 
@@ -168,7 +128,7 @@ while True:
 
     # Write to output video object.
     if bGenerateOutputVideo:
-        oOutputVideo.write(aFrame)
+        oOutputVideo.write(aWorkingFrame)
 
     
 
