@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import config
 
-bDisplayFrames = False
+bDisplayFrames = True
 
 bGenerateOutputVideo = True
 
@@ -25,14 +25,14 @@ bGenerateOutputVideo = True
 sVideoFullFilePath = 'C:\\repos\\dancing-ladies\\data\\raw\\ladies.avi'
 
 # Generate the background subtraction object (KNN or MOG2). (2, 75)
-oBackgroundSubtractor = cv.createBackgroundSubtractorKNN(history = 2, dist2Threshold = 50, detectShadows = False)
+oBackgroundSubtractor = cv.createBackgroundSubtractorKNN(history = 2, dist2Threshold = 75, detectShadows = False)
 
 # Start reading the target video.
 oInputVideo = cv.VideoCapture(cv.samples.findFileOrKeep(sVideoFullFilePath))
 
 # Video input aFrame rate, width, and height (W and H must be cast as integers).
 fInputVideoFramerate = oInputVideo.get(cv.CAP_PROP_FPS)
-nInputVideoFrameWidth = int(oInputVideo.get(cv.CAP_PROP_FRAME_WIDTH))
+nFrameWidth = int(oInputVideo.get(cv.CAP_PROP_FRAME_WIDTH))
 nInputVideoFrameHeight = int(oInputVideo.get(cv.CAP_PROP_FRAME_HEIGHT))
 
 # Quit is video could not be opened.
@@ -45,7 +45,7 @@ if not os.path.isdir('C:\\repos\\dancing-ladies\\data\\processed\\'):
 
 # Create video object to write to.
 if bGenerateOutputVideo:
-    oOutputVideo = cv.VideoWriter('C:\\repos\\dancing-ladies\\data\\processed\\output.avi', cv.VideoWriter_fourcc('M','J','P','G') , fInputVideoFramerate, (nInputVideoFrameWidth,nInputVideoFrameHeight))
+    oOutputVideo = cv.VideoWriter('C:\\repos\\dancing-ladies\\data\\processed\\output.avi', cv.VideoWriter_fourcc('M','J','P','G') , fInputVideoFramerate, (nFrameWidth,nInputVideoFrameHeight))
 
 # Initialize aFrame index var.
 nFrameIndex = 0
@@ -71,9 +71,9 @@ while True:
     # Convert color space RGB -> Gray
     aFrame =  (cv.cvtColor(aFrame, cv.COLOR_RGB2GRAY))
 
-    # # Apply 'open' morphological operation to remove 'snow' (small unconnected bodies due to avi compression).
-    # for index in range(0,3,1):
-    #     aFrame = cv.morphologyEx(aFrame, cv.MORPH_OPEN, np.ones((index * 2 + 7, index * 2 + 7), np.uint8))
+    # Apply 'open' morphological operation to remove 'snow' (small unconnected bodies due to avi compression).
+    for index in range(0,3,1):
+        aFrame = cv.morphologyEx(aFrame, cv.MORPH_OPEN, np.ones((index * 2 + 7, index * 2 + 7), np.uint8))
 
 
     # Convert color space Gray -> RGB
@@ -85,21 +85,21 @@ while True:
     # Calculate the forground mask.
     aFrame = oBackgroundSubtractor.apply(aFrame)
 
-    # Find all connected entities.
-    aEntityList, aLabeledImage, aEntityStats, aEntityCentroids = cv.connectedComponentsWithStats(image = aFrame, connectivity = 8)
+    # # Find all connected entities.
+    # aEntityList, aLabeledImage, aEntityStats, aEntityCentroids = cv.connectedComponentsWithStats(image = aFrame, connectivity = 8)
 
-    # The background is included as the 0th entry of the entity statistics, and should be removed.
-    aEntityStats = aEntityStats[1:, -1]
+    # # The background is included as the 0th entry of the entity statistics, and should be removed.
+    # aEntityStats = aEntityStats[1:, -1]
 
-    # Generate a blank image to transplant to.
-    aTempFrame = np.zeros((aLabeledImage.shape), dtype = np.uint8)
+    # # Generate a blank image to transplant to.
+    # aTempFrame = np.zeros((aLabeledImage.shape), dtype = np.uint8)
 
-    # For every component in the image, keep if it's above minimum size.
-    for i in range(0,  aEntityList - 1):
-        if aEntityStats[i] > config.nMinEntitySize:
-            aTempFrame[aLabeledImage == i + 1] = 255
+    # # For every component in the image, keep if it's above minimum size.
+    # for i in range(0,  aEntityList - 1):
+    #     if aEntityStats[i] > config.nMinEntitySize:
+    #         aTempFrame[aLabeledImage == i + 1] = 255
 
-    aFrame = aTempFrame
+    # aFrame = aTempFrame
 
     aFrame = cv.morphologyEx(src = aFrame, op = cv.MORPH_CLOSE, kernel = np.ones((25, 3),np.uint8))
 
@@ -109,30 +109,22 @@ while True:
 
     aFrame = cv.morphologyEx(src = aFrame, op = cv.MORPH_CLOSE, kernel = np.ones((100, 3),np.uint8))
 
-    contours = cv.findContours(aFrame, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    # contours = cv.findContours(aFrame, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
-    contours = contours[0] if len(contours) == 2 else contours[1]
+    # contours = contours[0] if len(contours) == 2 else contours[1]
 
-    for nIndex in contours:
-        cv.drawContours(aFrame, [nIndex], 0, (255,255,255), -1)
-
+    # for nIndex in contours:
+    #     cv.drawContours(aFrame, [nIndex], 0, (255,255,255), -1)
 
     aFrame = cv.morphologyEx(src = aFrame, op = cv.MORPH_CLOSE, kernel = np.ones((1, 200),np.uint8))
 
     aFrame = cv.morphologyEx(src = aFrame, op = cv.MORPH_CLOSE, kernel = np.ones((300, 1),np.uint8))
 
-    # aFrame = cv.morphologyEx(src = aFrame, op = cv.MORPH_CLOSE, kernel = np.ones((100, 5),np.uint8))
+    aFrame = cv.morphologyEx(src = aFrame, op = cv.MORPH_CLOSE, kernel = np.ones((100, 5),np.uint8))
 
-    # aFrame = cv.morphologyEx(src = aFrame, op = cv.MORPH_CLOSE, kernel = np.ones((1, 200),np.uint8))
+    aFrame = cv.morphologyEx(src = aFrame, op = cv.MORPH_CLOSE, kernel = np.ones((1, 200),np.uint8))
 
-    # morph: open (erode, then dilate)
-    # morph: close (dilate, then erode)
-    # Morphological operations; manipulate kernal size
-    # Close bodies.
-
-
-
-    # aFrame = cv.morphologyEx(src = aFrame, op = cv.MORPH_CLOSE, kernel = np.ones((300,1),np.uint8))
+    aFrame = cv.morphologyEx(src = aFrame, op = cv.MORPH_CLOSE, kernel = np.ones((300,1),np.uint8))
 
     # contours = cv.findContours(aFrame, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
@@ -163,10 +155,11 @@ while True:
 
     # segment bottom to waistline and do close operation (prevents arms from getting caught in the closing operation).
 
-    aFrameOriginal[(aFrame>=1).all(-1)] = [0,255,0]
+    # aFrameOriginal[(aFrame>=1).all(-1)] = [0,255,0]
 
 
     if bDisplayFrames:
+
         # Show the foreground mask.
         cv.imshow(winname = 'ForegroundMask', mat = aFrame)
 
@@ -175,7 +168,7 @@ while True:
 
     # Write to output video object.
     if bGenerateOutputVideo:
-        oOutputVideo.write(aFrameOriginal)
+        oOutputVideo.write(aFrame)
 
 # Close all open opencv windows.
 cv.destroyAllWindows()
