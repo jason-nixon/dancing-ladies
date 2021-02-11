@@ -25,42 +25,50 @@ bGenerateOutputVideo = False
 sVideoFullFilePath = 'C:\\repos\\dancing-ladies\\data\\raw\\ladies.avi'
 
 # Generate the background subtraction object (KNN or MOG2). (2, 75)
-oBackgroundSubtractor = cv.createBackgroundSubtractorKNN(history = 5, dist2Threshold = 75, detectShadows = False)
+# oBackgroundSubtractor = cv.createBackgroundSubtractorKNN(history = 3, dist2Threshold = 75, detectShadows = False)
+# oBackgroundSubtractor = cv.createBackgroundSubtractorMOG2(history = 3, varThreshold = 7, detectShadows = False)
+# oBackgroundSubtractor = cv.bgsegm.createBackgroundSubtractorCNT(
+#     minPixelStability = 3,
+#     useHistory = False,
+#     maxPixelStability = 15,
+#     isParallel = False
+# )
+oBackgroundSubtractor = cv.bgsegm.createBackgroundSubtractorGMG()
+
 
 # Start reading the target video.
 oInputVideo = cv.VideoCapture(cv.samples.findFileOrKeep(sVideoFullFilePath))
-
 
 # Video input aWorkingFrame rate, width, and height (W and H must be cast as integers).
 fFrameRate = oInputVideo.get(cv.CAP_PROP_FPS)
 nFrameWidth = int(oInputVideo.get(cv.CAP_PROP_FRAME_WIDTH))
 fFrameHeight = int(oInputVideo.get(cv.CAP_PROP_FRAME_HEIGHT))
 
-# Quit is video could not be opened.
+# Quit if video could not be opened.
 if not oInputVideo.isOpened:
     print('Error: Unable to open video.')
     exit(0)
 
-if not os.path.isdir('C:\\repos\\dancing-ladies\\data\\processed\\'):
-    os.mkdir('C:\\repos\\dancing-ladies\\data\\processed\\')
+if bGenerateOutputVideo: 
+    if not os.path.isdir('C:\\repos\\dancing-ladies\\data\\processed\\'):
+        os.mkdir('C:\\repos\\dancing-ladies\\data\\processed\\')
 
-# Create video object to write to.
-if bGenerateOutputVideo:
-    oOutputVideo = cv.VideoWriter('C:\\repos\\dancing-ladies\\data\\processed\\output.avi', cv.VideoWriter_fourcc('M','J','P','G') , fFrameRate, (nFrameWidth,fFrameHeight))
+    if bGenerateOutputVideo:
+        oOutputVideo = cv.VideoWriter('C:\\repos\\dancing-ladies\\data\\processed\\output.avi', cv.VideoWriter_fourcc('M','J','P','G') , fFrameRate, (nFrameWidth,fFrameHeight))
 
 # Initialize aWorkingFrame index var.
 nFrameIndex = 0
 
 while True:
 
-    # Incramenet and print aWorkingFrame index.
+    # Increment and print frame index.
     nFrameIndex += 1
     print(nFrameIndex)
 
     # Read aWorkingFrame from video.
     bGrabbed, aFrameOriginal = oInputVideo.read()
 
-    aFrameOriginal = aFrameOriginal[1:fFrameHeight, 1:640, :]
+    aFrameOriginal = aFrameOriginal[1:fFrameHeight, 641:1280, :]
 
     aWorkingFrame = np.copy(aFrameOriginal)
 
@@ -108,17 +116,17 @@ while True:
     for nIndex in range(0, 20, 1):
         aMask = cv.morphologyEx(src = aMask, op = cv.MORPH_OPEN, kernel = kernal)
 
-    for nIndex in range(0, 20, 1):
-        aMask = cv.morphologyEx(src = aMask, op = cv.MORPH_CLOSE, kernel = kernal)
+    # for nIndex in range(0, 20, 1):
+    #     aMask = cv.morphologyEx(src = aMask, op = cv.MORPH_CLOSE, kernel = kernal)
 
-    for nIndex in range(0, 20, 1):
-        aMask = cv.morphologyEx(src = aMask, op = cv.MORPH_OPEN, kernel = kernal) 
+    # for nIndex in range(0, 20, 1):
+    #     aMask = cv.morphologyEx(src = aMask, op = cv.MORPH_OPEN, kernel = kernal) 
 
     aFrameOverlay[np.where(aMask == 255)] = [0,255,255]
 
     cv.addWeighted(aFrameOverlay, 0.3, aFrameOriginal, 0.7, 0, aFrameOverlay)
 
-    if bDisplayFrames:
+    if bDisplayFrames and nFrameIndex % 2 == 0:
 
         # Show the foreground mask.
         cv.imshow(winname = 'ForegroundMask', mat = aFrameOverlay)
